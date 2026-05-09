@@ -1,5 +1,3 @@
-#附件 
-
 
 这是一个Hermes-Workspace的LaTex编辑器插件！
 
