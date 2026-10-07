@@ -1,0 +1,257 @@
+/* ============================================================
+   Floria LaTeX v2 — 两界面（目录页 + 纯 PDF 编辑页）
+   纯黑白极简、无彩色；token 沿用旧版（--plane / --radius / --gap）
+   目录页观感照 Pj13 Catalog（结构与数值），编辑页照 Prism（PDF 为主体）
+   ============================================================ */
+:root {
+  --bg: #FFFFFF;
+  --bg-soft: #F4F4F4;
+  --panel: #FFFFFF;
+  --border: #E2E2E2;
+  --border-soft: #EFEFEF;
+  --border-strong: #C9C9C9;
+  --ink: #111111;
+  --ink-soft: #6B6B6B;
+  --ink-faint: #A0A0A0;
+  --accent: #111111;
+  --accent-deep: #000000;
+  --accent-soft: #EDEDED;
+  --accent-fg: #FFFFFF;
+  --desk: #EFEFEF;          /* PDF 井底（页浮动其上的那层） */
+  --plane: #E7E7E7;         /* 底板：缝里露出的就是它 */
+  --hover: #F2F2F4;
+  --radius: 14px;
+  --gap: 10px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 8px 28px rgba(0, 0, 0, .07);
+  --serif: Georgia, "Times New Roman", "STIX Two Text", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+  --sans: "Segoe UI", "Microsoft YaHei UI", -apple-system, "PingFang SC", sans-serif;
+  --mono: Consolas, "JetBrains Mono", "Cascadia Mono", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  overflow: hidden;
+}
+.hidden { display: none !important; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ---------- 通用小件 ---------- */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+.btn:hover { border-color: var(--border-strong); background: var(--accent-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+.btn.ghost { background: transparent; }
+.btn.slim { padding: 5px 11px; font-size: 12.5px; border-radius: 999px; }
+.icon-btn {
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; background: transparent; color: var(--ink-soft); border-radius: 8px;
+}
+.icon-btn:hover { background: var(--accent-soft); color: var(--ink); }
+.icon-btn.chip {
+  width: auto; padding: 0 10px; height: 30px; border: 1px solid var(--border);
+  background: var(--bg-soft); border-radius: 999px; box-shadow: var(--shadow); font-size: 14px;
+}
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 9px; background: var(--accent); color: var(--accent-fg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 16px; font-weight: 600; flex: 0 0 auto;
+}
+
+/* ============================================================
+   一、目录页
+   ============================================================ */
+#view-catalog { height: 100%; display: flex; flex-direction: column; background: var(--bg); }
+.topbar {
+  flex: 0 0 auto; height: 48px; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--border);
+}
+.tb-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tb-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.tb-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+.cat-scroll { flex: 1; overflow: auto; }
+/* Pj13 数值：padding 18/16/40 + 内容 max-width 980 居中 */
+.cat { padding: 18px 16px 40px; max-width: 980px; margin: 0 auto; }
+.cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 0 4px 10px; }
+.cat-title { font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: .2px; }
+.cat-count { font-size: 12px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.cat-list { display: flex; flex-direction: column; }
+.cat-row {
+  width: 100%; text-align: left; display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border: none; border-bottom: 1px solid var(--border-soft);
+  background: transparent; color: var(--ink); border-radius: 8px;
+}
+.cat-row:first-child { border-top: 1px solid var(--border-soft); }
+.cat-row:hover { background: var(--hover); }
+.cat-icon { display: flex; color: var(--ink-faint); flex: 0 0 auto; }
+.cat-row:hover .cat-icon { color: var(--ink-soft); }
+.cat-name { font-size: 13.5px; font-weight: 600; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-meta { font-size: 12px; color: var(--ink-faint); font-variant-numeric: tabular-nums; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-arrow { color: var(--ink-faint); font-size: 15px; flex: 0 0 auto; }
+
+.cat-state { padding: 34px 12px; text-align: center; }
+.cat-state .cs-title { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+.cat-state .cs-hint { font-size: 12.5px; color: var(--ink-faint); line-height: 1.7; }
+.cat-state.err .cs-title { color: var(--ink); }
+
+/* ============================================================
+   二、编辑页（满屏 PDF）
+   ============================================================ */
+#view-viewer { position: fixed; inset: 0; background: var(--desk); }
+
+#pdf-scroll {
+  position: absolute; inset: 0; overflow: auto; background: var(--desk);
+  -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;
+  scroll-snap-type: y proximity;     /* 垂直翻页：页首对齐 */
+}
+#pdf-pages {
+  display: flex; flex-direction: column; gap: 18px; padding: 20px;
+  align-items: safe center;          /* 适宽时水平居中；放大超出井宽时退化为靠左（左缘可达） */
+}
+.pv-page {
+  flex: 0 0 auto; background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, .16);
+  border-radius: 2px; overflow: hidden; scroll-snap-align: start; position: relative;
+  cursor: crosshair;                 /* 点击 = 跳转源码 */
+}
+.pv-page canvas { display: block; }
+.pv-mark {
+  position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px;
+  border: 2px solid #111; border-radius: 50%; pointer-events: none;
+  animation: pv-mark-out .9s ease forwards;
+}
+@keyframes pv-mark-out {
+  0% { transform: scale(.5); opacity: .9; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* 顶浮条（两条浮条都覆盖在页面上、不占流） */
+.v-top {
+  position: absolute; top: 10px; left: 10px; right: 10px; z-index: 12;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  pointer-events: none;                    /* 只有子组可点，免得挡住「点 PDF 跳源码」 */
+}
+.vt-group { display: flex; align-items: center; gap: 8px; pointer-events: auto; min-width: 0; }
+.vt-left, .vt-right { flex: 0 1 auto; }
+.vt-mid { flex: 0 0 auto; }
+.v-book { font-family: var(--serif); font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
+.vt-left .btn, .vt-mid .btn { box-shadow: var(--shadow); }
+
+/* 工具 tab 条（内容由 js/toolbar.js 渲染） */
+.v-tooltabs {
+  display: flex; align-items: center; gap: 2px; padding: 2px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow);
+}
+.v-tool-tab {
+  border: none; background: transparent; color: var(--ink-soft); border-radius: 999px;
+  padding: 4px 11px; font-size: 12.5px; white-space: nowrap;
+}
+.v-tool-tab:hover { background: var(--accent-soft); color: var(--ink); }
+.v-tool-tab.on { background: var(--accent); color: var(--accent-fg); }
+
+/* 编译态胶囊（五态） */
+.v-state {
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 16px;
+  font-size: 13px; font-weight: 600; background: var(--bg-soft); color: var(--ink-soft);
+  cursor: pointer; font-family: var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 180px; box-shadow: var(--shadow);
+}
+.v-state:disabled { cursor: default; opacity: .75; }
+.v-state.st-stale { color: var(--ink-soft); border-color: var(--border-strong); border-style: dashed; background: var(--panel); }
+.v-state.st-err   { color: var(--bg); border-color: var(--ink); background: var(--ink); }
+.v-state.st-busy  { color: var(--ink-soft); border-color: var(--border-strong); background: var(--bg-soft); }
+.v-state.st-none  { color: var(--ink-soft); }
+
+/* 缩放 */
+.v-zoomwrap { position: relative; }
+#pdf-zoom-toggle {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px; height: 30px;
+  border: 1px solid var(--border); background: var(--bg-soft); border-radius: 999px;
+  color: var(--ink-soft); font-size: 12.5px; box-shadow: var(--shadow);
+}
+#pdf-zoom-toggle:hover { color: var(--ink); border-color: var(--border-strong); }
+#pdf-zoom-label { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+.zcaret { font-size: 10px; line-height: 1; }
+#zoom-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 248px; padding: 12px; z-index: 70;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+}
+.zp-row { display: flex; gap: 6px; }
+.zp-row button {
+  flex: 1; padding: 5px 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); color: var(--ink-soft); font-size: 12px;
+}
+.zp-row button:hover { color: var(--accent-deep); background: var(--accent-soft); border-color: var(--border-strong); }
+.zp-row button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.zp-slider { display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+#pdf-zoom-range { flex: 1; accent-color: var(--ink); }
+#pdf-zoom-val { min-width: 44px; text-align: right; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* 底浮条：翻页胶囊 */
+#pdf-nav { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 12; }
+.pv-caps {
+  display: flex; align-items: center; gap: 2px; padding: 2px 6px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow);
+}
+.pv-caps button {
+  width: 22px; height: 22px; border: none; background: none; border-radius: 50%;
+  color: var(--ink-soft); font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.pv-caps button:hover { background: var(--accent-soft); color: var(--accent-deep); }
+#pdf-page-ind { font-size: 12px; min-width: 64px; text-align: center; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* ---------- 工具面板卡（版本 / 日志） ---------- */
+#side-card {
+  position: absolute; right: 10px; top: 58px; bottom: 10px; width: 320px; z-index: 14;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.sc-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 9px 8px 9px 14px;
+}
+.sc-title { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); letter-spacing: .3px; }
+.sc-body { flex: 1; overflow: auto; padding: 0 12px 14px; }
+.tool-pane { display: block; }
+
+.pane-empty { padding: 26px 6px; text-align: center; }
+.pe-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.pe-hint { font-size: 12.5px; color: var(--ink-faint); line-height: 1.7; }
+
+.log-row {
+  border: 1px solid var(--border-soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
+  cursor: pointer;
+}
+.log-row:hover { background: var(--hover); }
+.log-row.bad { border-color: var(--border-strong); }
+.log-head { display: flex; align-items: baseline; gap: 8px; }
+.log-mark { font-size: 12px; font-weight: 700; flex: 0 0 auto; }
+.log-time { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-soft); flex: 0 0 auto; }
+.log-el { font-size: 11.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.log-brief { font-size: 12.5px; color: var(--ink-soft); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-body {
+  margin-top: 8px; padding: 8px; max-height: 320px; overflow: auto;
+  background: var(--bg-soft); border-radius: 8px;
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-all;
+}
+
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 90;
+  background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; box-shadow: var(--shadow); max-width: 70vw;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

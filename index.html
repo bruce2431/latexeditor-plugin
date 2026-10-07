@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Floria LaTeX</title>
+<link rel="stylesheet" href="css/app.css?v=20261007a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111111'/><text x='50' y='68' font-size='52' text-anchor='middle' font-family='Georgia' fill='white'>F</text></svg>">
+</head>
+<body>
+
+<!-- ============ 目录页 ============ -->
+<div id="view-catalog">
+  <header class="topbar">
+    <div class="tb-brand">
+      <div class="brand-mark">F</div>
+      <span class="tb-title">Pj18 · 论文项目</span>
+    </div>
+    <div class="tb-actions">
+      <button class="btn ghost slim" id="cat-refresh" title="重新扫描项目目录">刷新</button>
+      <button class="btn primary slim" id="cat-new">＋ 新建书稿</button>
+    </div>
+  </header>
+  <div class="cat-scroll">
+    <div class="cat">
+      <div class="cat-head">
+        <h2 class="cat-title">论文项目</h2>
+        <span class="cat-count" id="cat-count"></span>
+      </div>
+      <div class="cat-list" id="cat-list"></div>
+      <div class="cat-state hidden" id="cat-state"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 编辑页（纯 PDF） ============ -->
+<div id="view-viewer" class="hidden">
+  <div id="pdf-scroll"><div id="pdf-pages"></div></div>
+
+  <!-- 顶浮条：左 = 返回 + 书稿名；中 = 编译 + 编译态；右 = 工具 tab 条 + 缩放 + 下载。
+       容器 pointer-events:none，只有子组可点 —— 免得挡住「点 PDF 跳源码」。 -->
+  <div class="v-top">
+    <div class="vt-group vt-left">
+      <button class="btn ghost slim" id="v-back" title="返回论文项目列表">← 目录</button>
+      <span class="v-book" id="v-book"></span>
+    </div>
+    <div class="vt-group vt-mid">
+      <button class="btn primary slim" id="v-compile" title="本机重新编译这篇论文">编译</button>
+      <button id="pdf-state" class="v-state st-none" title="点击也触发编译">未编译</button>
+    </div>
+    <div class="vt-group vt-right">
+      <!-- 工具 tab 条：由 js/toolbar.js 按注册序渲染（版本 / 日志都是注册进表里的元素） -->
+      <div class="v-tooltabs" id="tool-tabs"></div>
+      <div class="v-zoomwrap">
+        <button id="pdf-zoom-toggle" title="缩放"><span id="pdf-zoom-label">适宽</span><span class="zcaret">▾</span></button>
+        <div id="zoom-panel" class="hidden">
+          <div class="zp-row">
+            <button data-zoom="fit">适宽</button>
+            <button data-zoom="fitpage">适页</button>
+          </div>
+          <div class="zp-row">
+            <button data-zoom="0.5">50%</button>
+            <button data-zoom="0.75">75%</button>
+            <button data-zoom="1">100%</button>
+            <button data-zoom="1.25">125%</button>
+            <button data-zoom="1.5">150%</button>
+            <button data-zoom="2">200%</button>
+          </div>
+          <div class="zp-slider">
+            <input type="range" id="pdf-zoom-range" min="40" max="300" step="5" value="100">
+            <span id="pdf-zoom-val">适宽</span>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn chip" id="pdf-download" title="下载 PDF">⭳</button>
+    </div>
+  </div>
+
+  <!-- 底浮条：翻页胶囊 -->
+  <div id="pdf-nav">
+    <div class="pv-caps">
+      <button id="pdf-prev" title="上一页">‹</button>
+      <span id="pdf-page-ind">– / –</span>
+      <button id="pdf-next" title="下一页">›</button>
+    </div>
+  </div>
+
+  <!-- 工具面板卡：内容 = 各注册工具的 pane（全部常驻，按 applyToolTab 显隐） -->
+  <aside id="side-card" class="hidden">
+    <div class="sc-head">
+      <span class="sc-title" id="sc-title"></span>
+      <button class="icon-btn" id="sc-close" title="收起">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8"/>
+        </svg>
+      </button>
+    </div>
+    <div class="sc-body">
+      <!-- 注册工具 pane（id 与 toolbar 注册项的 pane 字段一一对应） -->
+      <div class="tool-pane" id="tool-ver">
+        <div class="pane-empty">
+          <p class="pe-title">版本历史 · 待定</p>
+          <p class="pe-hint">将记录每次编译的快照（时间 / 页数 / 备注）。</p>
+        </div>
+      </div>
+      <div class="tool-pane hidden" id="tool-log"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="lib/pdfjs/pdf.min.js"></script>
+<script src="js/pdfview.js?v=20261007a"></script>
+<script src="js/util.js?v=20261007a"></script>
+<script src="js/toolbar.js?v=20261007a"></script>
+<script src="js/catalog.js?v=20261007a"></script>
+<script src="js/viewer.js?v=20261007a"></script>
+<script src="js/start.js?v=20261007a"></script>
+</body>
+</html>

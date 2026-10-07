@@ -1,0 +1,15 @@
+{
+  "name": "pj18-preview",
+  "version": "0.1.0",
+  "description": "Pj18 · LaTeX 论文预览 v2（网关 backend 模式：拉起 server.py；目录页列出项目，编辑页是一张可编译的 PDF）",
+  "backend": {
+    "name": "Pj18 LaTeX 后端",
+    "cmd": ["python", "-B", "server.py", "--port", "{port}", "--root", "{projectRoot}", "--no-open"],
+    "cwd": ".",
+    "port": 0,
+    "idleMinutes": 30,
+    "readyPath": "/index.html"
+  },
+  "owner": "Pj18-LaTex论文书写",
+  "hotReload": true
+}
