@@ -1,5 +1,6 @@
 /* Floria LaTeX v2 — 编辑页：满屏 PDF（自绘查看器 = js/pdfview.js，原样复用）+ 编译 + 缩放 + 翻页
-   + 工具面板卡。工具 tab 不写死：本文件只往 js/toolbar.js 的注册表里登记两枚
+   + 工具面板。顶栏只有三枚按钮：返回上级 / 编译 / 界面调整（编译态不再单列胶囊，折在编译按钮的文案里）。
+   工具 tab 不写死：本文件只往 js/toolbar.js 的注册表里登记两枚
    （'ver' 版本 = 占位 / 'log' 日志 = 本次会话的编译记录），tab 条由注册表渲染。 */
 (function () {
   'use strict';
@@ -13,31 +14,40 @@
     busy: false,
     logs: [],            // {ok, clock, elapsed, error, log}（内存，不落盘）
     tool: '',            // 当前展开的工具 id
+    state: 'none',       // 编译五态
   };
 
-  /* ---------------- 编译态胶囊（五态） ---------------- */
-  const ST = { none: '未编译', busy: '编译中…', ok: '✓ 已编译', stale: '● 源码已改', err: '✕ 编译失败' };
-  function setState(st, text) {
-    const el = $('pdf-state');
-    el.className = 'v-state st-' + st;
-    el.textContent = text || ST[st] || st;
-    el.disabled = st === 'busy';
+  /* ---------------- 编译五态 = 编译按钮自己的文案（不再另立胶囊） ---------------- */
+  const ST = { none: '编译', busy: '编译中…', ok: '编译', stale: '重新编译', err: '重试编译' };
+  function setState(st) {
+    S.state = st;
+    const b = $('v-compile');
+    if (!b) return;
+    b.textContent = ST[st] || ST.none;
+    b.className = 'vt-btn primary st-' + st;
+    b.disabled = st === 'busy';
   }
 
   /* ---------------- 工具面板卡（注册表消费方） ---------------- */
   function markTabs(id) {
     document.querySelectorAll('#tool-tabs [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === id));
   }
+  // 工具面板开合的唯一开关。面板占满整块视图区（见 css #side-card），故只需显隐——
+  // 不再有「卡压在 PDF 上、卡的区域还露着 PDF」这回事。
+  function setCardOpen(on) {
+    $('side-card').classList.toggle('hidden', !on);
+  }
   // 唯一落点：切 pane 显隐 + tab active 态 + 开关面板卡。force=true 时不吃「点同一枚收起」。
   function applyToolTab(id, force) {
     const card = $('side-card');
-    if (!id) { card.classList.add('hidden'); S.tool = ''; markTabs(''); return; }   // 空 = 收起
+    if (!id) { setCardOpen(false); S.tool = ''; markTabs(''); return; }   // 空 = 收起
     const nid = T.toolNormId(id);
     if (!force && nid && nid === S.tool && !card.classList.contains('hidden')) {
-      card.classList.add('hidden'); S.tool = ''; markTabs(''); return;
+      setCardOpen(false); S.tool = ''; markTabs(''); return;
     }
     S.tool = nid;
-    if (!nid) { card.classList.add('hidden'); markTabs(''); return; }
+    S.lastTool = nid;           // 收起后记住：再点「工具」仍开回这一枚
+    if (!nid) { setCardOpen(false); markTabs(''); return; }
     T.mountTool(nid);
     // pane 显隐按**去重后的 pane id** 收敛：先全隐，再只显示当前工具的 pane。
     // 不能按 d.id !== nid 逐条 toggle —— 两枚工具共用同一 pane 时，后一条会把前一条刚显示的又隐回去。
@@ -47,8 +57,16 @@
     const def = T.toolDef(nid);
     if (def && def.pane) { const el = $(def.pane); if (el) el.classList.remove('hidden'); }
     $('sc-title').textContent = def ? def.title : '';
-    card.classList.remove('hidden');
+    // 卡头 tab 条（注册表渲染）在场时不必再重复一枚文字标题；被宿主接管（tab 条空）时用它兜底
+    syncScTitle();
+    setCardOpen(true);
     markTabs(nid);
+  }
+  function syncScTitle() {
+    const tabs = $('tool-tabs');
+    const hasTabs = !!(tabs && tabs.children.length);
+    const t = $('sc-title');
+    if (t) t.classList.toggle('hidden', hasTabs);
   }
 
   /* ---------------- 日志 pane ---------------- */
@@ -56,12 +74,14 @@
   function renderLogPane() {
     const el = listEl();
     if (!el) return;
+    const sec = n => '<div class="pane-sec"><span class="pane-sec-title">原始日志</span>' +
+      '<span class="pane-sec-note">' + n + '</span></div>';
     if (!S.logs.length) {
-      el.innerHTML = '<div class="pane-empty"><p class="pe-title">还没有编译记录</p>' +
+      el.innerHTML = sec(0) + '<div class="pane-empty"><p class="pe-title">还没有编译记录</p>' +
         '<p class="pe-hint">点上方「编译」后，每次编译的结果与报错都会记在这里。</p></div>';
       return;
     }
-    el.innerHTML = S.logs.map(e => `
+    el.innerHTML = sec(S.logs.length) + S.logs.map(e => `
       <div class="log-row${e.ok ? '' : ' bad'}">
         <div class="log-head">
           <span class="log-mark">${e.ok ? '✓' : '✕'}</span>
@@ -90,14 +110,22 @@
   }
 
   /* ---------------- PDF 载入 / 编译 ---------------- */
-  function loadPdf() {
+  // soft=true：打开书稿时的「只读本地 PDF」路径——载不到不算编译失败，只回落成未编译态
+  function loadPdf(soft) {
     if (!window.PdfView) return Promise.resolve();
     const v = S.pdfMtime || Date.now();
     return PdfView.load('api/pdf?book=' + encodeURIComponent(S.book) + '&v=' + v, (cur, total) => {
       $('pdf-page-ind').textContent = cur + ' / ' + total;
-    }, onPick).catch(err => {
-      setState('err');
-      pushLog({ ok: false, elapsed: '0.0', error: 'PDF 载入失败：' + (err && err.message || err), log: '' });
+    }, onPick).then(() => {
+      setState('ok');
+    }).catch(err => {
+      if (soft) {
+        setState('none');
+        F.toast('这篇还没有编译好的 PDF（.build/main.pdf）——点「编译」生成');
+      } else {
+        setState('err');
+        pushLog({ ok: false, elapsed: '0.0', error: 'PDF 载入失败：' + (err && err.message || err), log: '' });
+      }
     });
   }
 
@@ -145,21 +173,23 @@
     if (S.book === name && !$('view-viewer').classList.contains('hidden')) return;
     S.book = name;
     S.pdfMtime = 0;
-    $('v-book').textContent = name;
     setState('none');
     applyToolTab('');
     renderLogPane();
+    // 本页是「本地 PDF 显示器」：打开 = 直接读 .build/main.pdf，**从不自动编译**。
+    // 先问 /api/books 要该书的 pdf 状态：有才让 pdf.js 去取（**没 PDF 就不去取**——直接让 pdf.js
+    // 撞 404 会在它内部留一个没人接的 promise 拒绝，控制台报 Uncaught）。
     let info = null;
     try {
       const books = await F.api('api/books');
       info = (books.find(b => b.name === name) || {}).pdf || null;
-    } catch (e) { /* 拿不到状态就按未编译走，编译失败会写日志 */ }
+    } catch (e) { /* 状态取不到：只当没 PDF，不弹提示（目录页已负责服务器不可达的文案） */ }
     if (info && info.exists) {
-      S.pdfMtime = info.mtime || 0;
-      setState(info.fresh ? 'ok' : 'stale');
-      await loadPdf();
+      await loadPdf(true);
+      if (!info.fresh) setState('stale');   // 源码比 PDF 新 → 编译按钮改口「重新编译」
     } else {
-      await compile();     // 首次打开：没有 PDF 就先编一次（MATH/PHYSIC 这类约 30–90s）
+      setState('none');
+      if (info) F.toast('这篇还没有编译好的 PDF（.build/main.pdf）——点「编译」生成');
     }
   }
 
@@ -191,26 +221,21 @@
       const b = e.target.closest('[data-tool]');
       if (b) applyToolTab(b.dataset.tool);
     });
+    syncScTitle();
+    // 宿主工具栏（Floria 「工具栏」面板）选了某枚工具 → 本页切 pane（tab 由宿主渲，不在页内）
+    window.addEventListener('floria:tool-select', e => applyToolTab((e.detail && e.detail.id) || ''));
     $('sc-close').addEventListener('click', () => applyToolTab(''));
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !$('side-card').classList.contains('hidden')) applyToolTab('');
     });
 
     $('v-compile').addEventListener('click', compile);
-    $('pdf-state').addEventListener('click', compile);
     $('v-back').addEventListener('click', () => { location.hash = ''; });
 
     $('pdf-prev').addEventListener('click', () => { if (window.PdfView) PdfView.prev(); });
     $('pdf-next').addEventListener('click', () => { if (window.PdfView) PdfView.next(); });
-    $('pdf-download').addEventListener('click', () => {
-      if (!S.book) return;
-      const a = document.createElement('a');
-      a.href = 'api/pdf?book=' + encodeURIComponent(S.book) + '&v=' + (S.pdfMtime || Date.now());
-      a.download = (S.book.split('/').pop() || 'paper') + '.pdf';
-      a.click();
-    });
 
-    // 缩放面板
+    // 界面调整（缩放）面板
     $('pdf-zoom-toggle').addEventListener('click', e => {
       e.stopPropagation();
       $('zoom-panel').classList.toggle('hidden');

@@ -175,9 +175,8 @@
     });
     if (observer) { observer.disconnect(); observePages(); }
     const z = myZoom();
-    const lab = $('pdf-zoom-label');
-    if (lab) lab.textContent = z === 'fit' ? '适宽' : z === 'fitpage' ? '适页' : Math.round(zoom * 100) + '%';
-    // 顶栏折叠面板里的滑杆与读数跟随（面板未渲染时静默跳过）
+    // 按钮文案固定 = 「界面调整」（顶栏只有三枚按钮，不拿按钮当读数）；当前值只在折叠面板里读
+    // 折叠面板里的滑杆与读数跟随（面板未渲染时静默跳过）
     const rng = $('pdf-zoom-range'), zval = $('pdf-zoom-val');
     if (rng && zval) {
       const pct = (typeof z === 'number') ? Math.round(z * 100) : null;

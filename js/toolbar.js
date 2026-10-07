@@ -35,12 +35,15 @@
   }
 
   // tab 条渲染（唯一口）：数据源 = TOOL_DEFS 注册序。active 态由 viewer.js applyToolTab 落。
+  // 已被宿主工具栏认领（hosted）时本页不画 tab —— 工具就是「注册在工具栏」的，不落在页面里。
   function renderToolTabs() {
     const box = $('tool-tabs');
-    if (!box) return;
-    box.innerHTML = TOOL_DEFS.map(
-      t => `<button type="button" class="v-tool-tab" data-tool="${esc(t.id)}">${esc(t.title)}</button>`,
-    ).join('');
+    if (box) {
+      box.innerHTML = hosted ? '' : TOOL_DEFS.map(
+        t => `<button type="button" class="v-tool-tab" data-tool="${esc(t.id)}">${esc(t.title)}</button>`,
+      ).join('');
+    }
+    postTools();
   }
 
   // 内容挂载：某工具第一次被激活时调一次 def.mount(paneEl)（靠 dataset.mounted 去重；无 mount 即静态 pane）
@@ -53,5 +56,50 @@
     try { def.mount(el); } catch (e) { console.error('工具挂载失败 ' + id + ':', e); }
   }
 
-  F.toolbar = { registerTool, renderToolTabs, toolDef, toolDefs, toolNormId, mountTool };
+  /* ---------------- 宿主桥：工具注册到 Floria「工具栏」面板 ----------------
+     本页跑在 /backend/<label>/ 反代 iframe 里时，把工具表申报给宿主工具栏（Floria work 右栏的
+     「工具栏」面板）：`{type:'floria-wk-tool-register', tools:[{id,title}]}`（**整份替换**，不送 pane）。
+     宿主渲 tab 条、**保预览帧在场**（帧工具的内容归本页自管），点 tab 回 `floria-wk-tool-select{id}`
+     （`''` = 回到默认/预览态）→ 本页切 pane（CustomEvent 'floria:tool-select'，viewer.js 接）。
+     宿主在收到申报后会立刻回传一次当前选中，故**收到 select 即证明桥是活的** → 置 hosted：本页不再是
+     tab 的落点（`#tool-tabs` 清空），tab 只长在宿主工具栏上。
+     未桥接时（单开 / `file://` / 旧宿主）hosted 恒 false → 本页自渲 tab（落在工具面板卡头；
+     顶栏只有三枚按钮，面板不开则 tab 不可见——非桥接下唯一的面板入口是编译失败自动摊开）。 */
+  const EMBEDDED = window.parent !== window && location.pathname.indexOf('/backend/') === 0;
+  let hosted = false;
+
+  function setHosted(on) {
+    if (hosted === on) return;
+    hosted = on;
+    renderToolTabs();                                   // tab 落点切换：宿主接管 → 本页清空
+  }
+
+  let lastPosted = '';   // 去重：宿主每次收到申报都会回传选中 → 不去重就 register/select 互踢成死循环
+  function postTools() {
+    if (!EMBEDDED) return;
+    const payload = JSON.stringify(TOOL_DEFS.map(t => ({ id: t.id, title: t.title })));
+    if (payload === lastPosted) return;
+    lastPosted = payload;
+    try {
+      parent.postMessage({ type: 'floria-wk-tool-register', tools: JSON.parse(payload) }, '*');
+    } catch (e) { /* 跨源/无父窗也不该炸 */ }
+  }
+
+  window.addEventListener('message', e => {
+    if (!EMBEDDED || e.source !== window.parent) return;
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'floria-wk-tool-select') {        // 宿主选了某枚工具（'' = 回默认态）→ 本页切 pane
+      setHosted(true);
+      window.dispatchEvent(new CustomEvent('floria:tool-select', { detail: { id: String(d.id || '') } }));
+    } else if (d.type === 'floria-wk-tool-host') {   // 宿主认领（旧 ack，保留兼容）
+      setHosted(true);
+    } else if (d.type === 'floria-wk-tool-ask') {    // 宿主索要工具表（挂载时机晚于本页时）
+      lastPosted = '';
+      postTools();
+    }
+  });
+
+  F.toolbar = { registerTool, renderToolTabs, toolDef, toolDefs, toolNormId, mountTool,
+                embedded: () => EMBEDDED, hosted: () => hosted };
 })();

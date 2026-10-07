@@ -59,10 +59,6 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px solid transparent; background: transparent; color: var(--ink-soft); border-radius: 8px;
 }
 .icon-btn:hover { background: var(--accent-soft); color: var(--ink); }
-.icon-btn.chip {
-  width: auto; padding: 0 10px; height: 30px; border: 1px solid var(--border);
-  background: var(--bg-soft); border-radius: 999px; box-shadow: var(--shadow); font-size: 14px;
-}
 .brand-mark {
   width: 28px; height: 28px; border-radius: 9px; background: var(--accent); color: var(--accent-fg);
   display: flex; align-items: center; justify-content: center;
@@ -112,8 +108,9 @@ button { font-family: inherit; cursor: pointer; }
    ============================================================ */
 #view-viewer { position: fixed; inset: 0; background: var(--desk); }
 
+/* PDF 井从顶栏下沿开始（顶栏是通栏实体条，PDF 不从它底下穿过） */
 #pdf-scroll {
-  position: absolute; inset: 0; overflow: auto; background: var(--desk);
+  position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow: auto; background: var(--desk);
   -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;
   scroll-snap-type: y proximity;     /* 垂直翻页：页首对齐 */
 }
@@ -137,51 +134,42 @@ button { font-family: inherit; cursor: pointer; }
   100% { transform: scale(1.9); opacity: 0; }
 }
 
-/* 顶浮条（两条浮条都覆盖在页面上、不占流） */
+/* 顶栏：**通栏白条**（照 Prism 的 PDF 预览列——白面 + 底边一条发丝线），不浮在 PDF 上。
+   条上只装三枚按钮：返回上级 / 编译 / 界面调整（用户 2026-10-07 定案）。 */
 .v-top {
-  position: absolute; top: 10px; left: 10px; right: 10px; z-index: 12;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  pointer-events: none;                    /* 只有子组可点，免得挡住「点 PDF 跳源码」 */
+  position: absolute; top: 0; left: 0; right: 0; height: 48px; z-index: 12;
+  display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
 }
-.vt-group { display: flex; align-items: center; gap: 8px; pointer-events: auto; min-width: 0; }
-.vt-left, .vt-right { flex: 0 1 auto; }
-.vt-mid { flex: 0 0 auto; }
-.v-book { font-family: var(--serif); font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
-.vt-left .btn, .vt-mid .btn { box-shadow: var(--shadow); }
+.vt-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.vt-bar { display: flex; align-items: center; gap: 6px; min-width: 0; }
+/* 按钮 = Prism 顶栏那枚描边胶囊：白面 + 1px 描边 + 全圆角；「编译」是唯一吃墨的实心胶囊 */
+.vt-btn {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--panel);
+  color: var(--ink-soft); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; white-space: nowrap;
+}
+.vt-btn:hover { border-color: var(--border-strong); background: var(--accent-soft); color: var(--ink); }
+.vt-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; padding: 5px 15px; }
+.vt-btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); color: var(--accent-fg); }
+#v-compile:disabled { opacity: .55; cursor: default; }
 
-/* 工具 tab 条（内容由 js/toolbar.js 渲染） */
+/* 工具 tab 条（内容由 js/toolbar.js 渲染；贴在工具卡卡头，观感照 Prism 的 工具面板 tab 条）
+   —— 扁平文字 tab（不是浮条胶囊）：active = 文字加深 + 底部一条 1.5px 下划线 */
 .v-tooltabs {
-  display: flex; align-items: center; gap: 2px; padding: 2px;
-  background: var(--panel); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 16px; padding: 0;
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
 }
+/* 被宿主接管时本页 tab 条为空 → 不占位，标题回落成左对齐（否则空 tab 条把标题挤到中间） */
+.v-tooltabs:empty { flex: 0 0 auto; }
 .v-tool-tab {
-  border: none; background: transparent; color: var(--ink-soft); border-radius: 999px;
-  padding: 4px 11px; font-size: 12.5px; white-space: nowrap;
+  border: none; background: none; color: var(--ink-faint); border-radius: 0;
+  padding: 0 0 7px; font-size: 13px; white-space: nowrap; border-bottom: 1.5px solid transparent;
 }
-.v-tool-tab:hover { background: var(--accent-soft); color: var(--ink); }
-.v-tool-tab.on { background: var(--accent); color: var(--accent-fg); }
-
-/* 编译态胶囊（五态） */
-.v-state {
-  border: 1px solid var(--border); border-radius: 999px; padding: 4px 16px;
-  font-size: 13px; font-weight: 600; background: var(--bg-soft); color: var(--ink-soft);
-  cursor: pointer; font-family: var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 180px; box-shadow: var(--shadow);
-}
-.v-state:disabled { cursor: default; opacity: .75; }
-.v-state.st-stale { color: var(--ink-soft); border-color: var(--border-strong); border-style: dashed; background: var(--panel); }
-.v-state.st-err   { color: var(--bg); border-color: var(--ink); background: var(--ink); }
-.v-state.st-busy  { color: var(--ink-soft); border-color: var(--border-strong); background: var(--bg-soft); }
-.v-state.st-none  { color: var(--ink-soft); }
+.v-tool-tab:hover { color: var(--ink); }
+.v-tool-tab.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
 
 /* 缩放 */
 .v-zoomwrap { position: relative; }
-#pdf-zoom-toggle {
-  display: flex; align-items: center; gap: 6px; padding: 5px 12px; height: 30px;
-  border: 1px solid var(--border); background: var(--bg-soft); border-radius: 999px;
-  color: var(--ink-soft); font-size: 12.5px; box-shadow: var(--shadow);
-}
-#pdf-zoom-toggle:hover { color: var(--ink); border-color: var(--border-strong); }
 #pdf-zoom-label { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
 .zcaret { font-size: 10px; line-height: 1; }
 #zoom-panel {
@@ -213,30 +201,38 @@ button { font-family: inherit; cursor: pointer; }
 .pv-caps button:hover { background: var(--accent-soft); color: var(--accent-deep); }
 #pdf-page-ind { font-size: 12px; min-width: 64px; text-align: center; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 
-/* ---------- 工具面板卡（版本 / 日志） ---------- */
+/* ---------- 工具面板（版本 / 日志） ---------- */
+/* 展开 = **占满整块视图区**（照 Floria work 右栏自带的那枚「评论」工具页：工具页就是一整列）。
+   不是盖在 PDF 上的浮卡——那样面板区域底下还露着 PDF；本帧是工具内容的唯一载体（编译日志只活在本页内存里），
+   宿主又为帧工具保着预览帧在场，所以「整列」= 在本帧内铺满。 */
 #side-card {
-  position: absolute; right: 10px; top: 58px; bottom: 10px; width: 320px; z-index: 14;
+  position: absolute; inset: 0; z-index: 14;
   display: flex; flex-direction: column; overflow: hidden;
-  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  background: var(--panel);
 }
 .sc-head {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; padding: 9px 8px 9px 14px;
+  gap: 8px; padding: 12px 10px 0 16px; border-bottom: 1px solid var(--border-soft);
 }
-.sc-title { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); letter-spacing: .3px; }
-.sc-body { flex: 1; overflow: auto; padding: 0 12px 14px; }
+.sc-title { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1 1 auto; }
+.sc-body { flex: 1; overflow: auto; padding: 0 10px 16px; }
 .tool-pane { display: block; }
 
-.pane-empty { padding: 26px 6px; text-align: center; }
+/* pane 内的小节头（Prism 工具面板里「原始日志」那种分节标签） */
+.pane-sec { display: flex; align-items: baseline; gap: 8px; padding: 14px 6px 6px; }
+.pane-sec-title { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); letter-spacing: .4px; text-transform: none; }
+.pane-sec-note { font-size: 11.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.pane-empty { padding: 44px 6px; text-align: center; }
 .pe-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .pe-hint { font-size: 12.5px; color: var(--ink-faint); line-height: 1.7; }
 
+/* 日志行：不是一张张小卡，是一条条发丝分隔的列表行（照 Prism 面板的列表感） */
 .log-row {
-  border: 1px solid var(--border-soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
-  cursor: pointer;
+  padding: 9px 6px; border-bottom: 1px solid var(--border-soft); border-radius: 6px; cursor: pointer;
 }
 .log-row:hover { background: var(--hover); }
-.log-row.bad { border-color: var(--border-strong); }
+.log-row.bad .log-mark { color: var(--ink); }
 .log-head { display: flex; align-items: baseline; gap: 8px; }
 .log-mark { font-size: 12px; font-weight: 700; flex: 0 0 auto; }
 .log-time { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-soft); flex: 0 0 auto; }
