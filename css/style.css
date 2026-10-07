@@ -1,0 +1,569 @@
+/* ============================================================
+   Floria LaTeX — 纯黑白极简（无彩色，serif 标题）
+   ============================================================ */
+:root {
+  --bg: #FFFFFF;
+  --bg-soft: #F4F4F4;
+  --panel: #FFFFFF;
+  --border: #E2E2E2;
+  --border-strong: #C9C9C9;
+  --ink: #111111;
+  --ink-soft: #6B6B6B;
+  --ink-faint: #A0A0A0;
+  --accent: #111111;
+  --accent-deep: #000000;
+  --accent-soft: #EDEDED;
+  --accent-fg: #FFFFFF;
+  --paper: #FFFFFF;
+  --desk: #EFEFEF;          /* 预览井底（PDF 页浮动其上的那层） */
+  --plane: #E7E7E7;         /* 底板：卡与卡、卡与窗口缝里露出的就是它 */
+  --radius: 14px;           /* 卡圆角 */
+  --gap: 10px;              /* 卡间缝 = 顶栏各卡缝隙 = 编辑/预览沟槽宽 */
+  --chat-w: 340px;          /* 助手列卡固定宽（Prism 的聊天列也是固定宽） */
+  --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 8px 28px rgba(0, 0, 0, .07);
+  --serif: Georgia, "Times New Roman", "STIX Two Text", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+  --sans: "Segoe UI", "Microsoft YaHei UI", -apple-system, "PingFang SC", sans-serif;
+  --mono: Consolas, "JetBrains Mono", "Cascadia Mono", monospace;
+}
+html[data-theme="dark"] {
+  --bg: #121212;
+  --bg-soft: #1C1C1C;
+  --panel: #171717;
+  --border: #2E2E2E;
+  --border-strong: #454545;
+  --ink: #F2F2F2;
+  --ink-soft: #9A9A9A;
+  --ink-faint: #6E6E6E;
+  --accent: #F2F2F2;
+  --accent-deep: #FFFFFF;
+  --accent-soft: #262626;
+  --accent-fg: #111111;
+  --paper: #1A1A1A;
+  --desk: #0D0D0D;
+  --plane: #0A0A0A;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--plane);
+  color: var(--ink);
+  font-size: 14px;
+  overflow: hidden;
+}
+.hidden { display: none !important; }
+button { font-family: inherit; cursor: pointer; }
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-size: 13px;
+  transition: all .15s;
+}
+.btn:hover { border-color: var(--border-strong); background: var(--bg-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.ghost { background: transparent; }
+.btn.slim { padding: 5px 11px; font-size: 12.5px; }
+.icon-btn {
+  border: none; background: transparent; color: var(--ink-soft);
+  border-radius: 8px; width: 30px; height: 30px; font-size: 15px;
+  transition: all .15s;
+}
+.icon-btn:hover { background: var(--bg-soft); color: var(--ink); }
+
+/* ============ 仪表盘 ============ */
+/* 灰底板上浮一张通高圆角卡：顶行＝品牌 + 工具组（搜索 / 视图切换 / 刷新 / 新建），
+   下方＝可滚的书稿列表（表格或网格两种视图） */
+#view-dashboard {
+  height: 100vh; padding: var(--gap); background: var(--plane);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.dash-shell {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: var(--panel); border-radius: var(--radius); overflow: hidden;
+}
+.dash-header {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.brand-text { min-width: 0; }
+.brand h1 { font-family: var(--serif); font-size: 19px; font-weight: 600; letter-spacing: .2px; }
+.brand-sub { color: var(--ink-soft); font-size: 12px; margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-mark {
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+  background: var(--accent); color: var(--accent-fg);
+  font-family: var(--serif); font-size: 21px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow);
+}
+.brand-mark.small { width: 26px; height: 26px; border-radius: 7px; font-size: 14px; }
+.dash-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* 搜索胶囊 */
+.dash-search {
+  display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 12px; width: 210px;
+  background: var(--bg-soft); border: 1px solid transparent; border-radius: 9px;
+  color: var(--ink-faint); transition: all .15s;
+}
+.dash-search:focus-within { border-color: var(--border-strong); background: var(--panel); }
+.dash-search input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  font-family: inherit; font-size: 13px; color: var(--ink);
+}
+.dash-search input::placeholder { color: var(--ink-faint); }
+
+/* 视图切换：两个图标按钮，当前态反白 */
+.view-toggle { display: flex; align-items: center; gap: 2px;
+  background: var(--bg-soft); border-radius: 10px; padding: 2px; }
+.view-toggle .icon-btn { width: 30px; height: 30px; border-radius: 8px; }
+.view-toggle .icon-btn.on,
+.view-toggle .icon-btn.on:hover { background: var(--accent); color: var(--accent-fg); }
+
+/* 不再 max-width 居中：表格要跟页头品牌左对齐（居中会让表头缩进 110px 对不上） */
+.dash-body { flex: 1; min-height: 0; overflow: auto; padding: 0 22px 40px; }
+
+/* --- 列表视图：可排序表格 --- */
+.book-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.book-table thead th:first-child, .book-table tbody td:first-child { padding-left: 0; }
+.book-table thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--panel);
+  text-align: left; font-weight: 500; font-size: 12px; color: var(--ink-soft);
+  padding: 11px 12px; white-space: nowrap; user-select: none;
+  /* border-collapse + sticky 下 th 的 border-bottom 会跟着滚动消失，用 inset shadow 代替 */
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.book-table th.bt-sort { cursor: pointer; }
+.book-table th.bt-sort:hover { color: var(--ink); }
+.book-table th.bt-sort.on { color: var(--ink); font-weight: 600; }
+.bt-arrow { display: inline-block; width: 9px; margin-left: 3px; color: var(--ink-faint); font-size: 10px; }
+.book-table th.bt-sort.on .bt-arrow { color: var(--ink); }
+.book-table td { padding: 0 12px; height: 46px; border-bottom: 1px solid var(--border); color: var(--ink-soft); }
+.book-table th.num, .book-table td.num { text-align: right; }
+.book-table th.bt-cmore, .book-table td.bt-more { width: 42px; text-align: right; }
+.book-row { cursor: pointer; }
+.book-row:hover { background: var(--bg-soft); }
+.bt-name { display: flex; align-items: center; gap: 9px; min-width: 0;
+  color: var(--ink); font-family: var(--serif); font-size: 14px; font-weight: 600; }
+.bt-name .bt-name-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-file { font-family: var(--mono); font-size: 12px; }
+.bt-more .icon-btn { width: 26px; height: 26px; font-size: 15px; line-height: 1; }
+.book-row:hover .bt-more .icon-btn { color: var(--ink); }
+#dl-none { text-align: center; padding: 70px 0; color: var(--ink-faint); font-size: 13px; }
+
+/* --- 网格视图：沿用卡片观感 --- */
+.project-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;
+  padding-top: 22px;
+}
+.project-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px; cursor: pointer; transition: all .18s; position: relative;
+  text-align: left; color: inherit;
+}
+.project-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.pc-title { font-family: var(--serif); font-size: 17px; font-weight: 600; margin-bottom: 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-meta { display: flex; gap: 14px; color: var(--ink-soft); font-size: 12px; }
+.dash-empty { text-align: center; padding: 110px 0; color: var(--ink-soft); }
+.empty-mark { font-family: var(--serif); font-size: 60px; color: var(--ink-faint); margin-bottom: 14px; }
+.empty-hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+
+/* --- 行内 ⋯ 菜单（position:fixed，被 JS 夹在视口内） --- */
+#dl-menu {
+  position: fixed; z-index: 60; min-width: 150px; padding: 5px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.dl-mi {
+  display: block; width: 100%; text-align: left; border: none; background: transparent;
+  color: var(--ink); font-family: inherit; font-size: 13px; padding: 8px 11px; border-radius: 7px;
+}
+.dl-mi:hover { background: var(--bg-soft); }
+
+/* ============ 服务器模式书库 ============ */
+#srv-section { margin-bottom: 30px; }
+.srv-card .pc-title { display: flex; align-items: center; gap: 8px; }
+.srv-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* ============ 编辑器框架 ============ */
+/* 灰底板上浮三张卡（大纲 / 编辑 / 预览），缝里露底板；顶栏是两张浮卡 */
+#view-editor {
+  height: 100vh; display: flex; flex-direction: column;
+  background: var(--plane); padding: var(--gap); gap: var(--gap);
+}
+/* 顶栏：**不画卡片**（2026-09-25 定案「太多卡片，应该就编辑区和 pdf 两个」），只是三段透明条，
+   宽度仍与下方各列一一对应、卡缘 = 列缘（js/panes.js syncTopbar 逐段同步宽度） */
+#topbar {
+  height: 46px; flex-shrink: 0; position: relative; z-index: 30;
+  display: flex; align-items: stretch; gap: var(--gap);
+}
+.tb-seg {
+  display: flex; align-items: center; gap: 9px; padding: 0 14px; min-width: 0;
+}
+/* 左上角视图开关：绝对覆盖在顶栏最左。必须是覆盖件而非行内卡 —— 行内占宽会把后面每张卡
+   右推 46+gap，顶栏卡就对不上下方列了；也不能放进 #tb-editor（关掉「代码」后入口即消失）。 */
+#tb-panes {
+  position: absolute; left: 4px; top: 0; height: 100%; width: 42px; z-index: 6;
+  display: flex; align-items: center; justify-content: center; background: transparent; padding: 0;
+}
+#tb-panes .icon-btn { width: 30px; height: 30px; }
+.tb-seg.lead-pad { padding-left: 46px; }   /* 最左那张卡给图标让位（applyPanes 动态加） */
+#tb-editor { width: 44%; flex-shrink: 0; justify-content: space-between; overflow: hidden; }
+#tb-chat { width: var(--chat-w); flex-shrink: 0; justify-content: center; }
+.tb-chat-name { font-family: var(--serif); font-size: 13.5px; font-weight: 600; }
+
+/* 视图开关浮层（挂在 #topbar 下：#tb-editor 有 overflow:hidden，放卡里会被裁） */
+#panes-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 210px; padding: 8px; z-index: 70;
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.pn-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: 9px; cursor: pointer; font-size: 13px;
+}
+.pn-row:hover { background: var(--bg-soft); }
+.pn-switch {
+  width: 34px; height: 20px; border-radius: 10px; background: var(--border-strong);
+  position: relative; flex-shrink: 0; transition: background .16s;
+}
+.pn-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--bg); box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+  transition: transform .16s;
+}
+.pn-row[aria-checked="true"] .pn-switch { background: var(--accent); }
+.pn-row[aria-checked="true"] .pn-switch::after { transform: translateX(14px); }
+.tb-left, .tb-right { display: flex; align-items: center; gap: 9px; min-width: 0; }
+#proj-title {
+  font-family: var(--serif); font-size: 15px; font-weight: 600;
+  padding: 4px 10px; border-radius: 8px; cursor: text; max-width: 320px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#proj-title:hover { background: var(--bg-soft); }
+
+#workspace { flex: 1; display: flex; min-height: 0; }
+#outline {
+  width: 210px; flex-shrink: 0; overflow: auto;
+  background: var(--panel); border-radius: var(--radius);
+  margin-right: var(--gap);
+  padding: 14px 10px;
+}
+.outline-head {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  color: var(--ink-faint); text-transform: uppercase;
+  padding: 0 8px 8px;
+}
+.ol-item {
+  display: block; padding: 5px 8px; border-radius: 7px;
+  font-size: 12.5px; color: var(--ink-soft); cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: all .12s;
+}
+.ol-item:hover { background: var(--bg-soft); color: var(--ink); }
+.ol-item.active { background: var(--accent-soft); color: var(--accent-deep); font-weight: 600; }
+.ol-item.lv2 { padding-left: 22px; }
+.ol-item.lv3 { padding-left: 36px; }
+
+#editor-pane { flex: 0 0 44%; min-width: 220px; position: relative; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
+#editor-pane .CodeMirror { position: absolute; inset: 0; height: 100%; font-family: var(--mono); font-size: 13.5px; line-height: 1.65; }
+/* 列间沟槽（两条都隐形，缝里露底板），hover 时中央现一小段竖条作可拖提示：
+   #divider      = 编辑列 ↔ 右邻列（助手在流内时即助手列，否则直接是预览列）
+   #divider-chat = 助手列 ↔ 预览列（只在助手「收进侧栏」时存在） */
+#divider, #divider-chat { width: var(--gap); cursor: col-resize; flex-shrink: 0; position: relative; }
+#divider::after, #divider-chat::after {
+  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 2px; height: 0; border-radius: 2px; background: var(--border-strong);
+  transition: height .15s;
+}
+#divider:hover::after, #divider-chat:hover::after { height: 48px; }
+/* 拖拽进行中（js/core.js dragHandle 给 body 挂 .dragging）：内嵌 iframe 不吃鼠标 ——
+   否则鼠标划过助手卡时 mouseup 落在 Floria 文档里，本文档收不到、拖拽状态卡死；顺带禁选中。 */
+body.dragging { user-select: none; }
+body.dragging iframe { pointer-events: none; }
+
+#preview-pane { flex: 1; min-width: 260px; overflow: auto; background: var(--panel); border-radius: var(--radius); padding: 26px 22px 70px; position: relative; }
+#preview-pane.mode-pdf { overflow: hidden; padding: 0; }
+#preview-pane.mode-pdf #paper { display: none; }
+
+/* ============ 助手卡（Prism 形态，一个节点三态：侧栏列卡 / 悬浮 .float / 收细条 .slim）
+   聊天本体 = 内嵌 iframe 真 Floria UI；三种态都靠类切换 + 改尺寸，iframe 永不搬 DOM。 ============ */
+/* 列宽 = --chat-w（由 js/panes.js 按 #divider-chat 拖拽写进 :root，存 florialatex.chat.w）；
+   右邻缝由 #divider-chat 出，故自身不再留 margin-right */
+#chat-pane {
+  flex: 0 0 var(--chat-w); min-width: 240px;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--panel); border-radius: var(--radius); overflow: hidden;
+}
+/* 悬浮卡：脱流浮在编辑区上方，宽高由内联样式给（js/chat.js placeFloat）；
+   z-index 40 低于 #dl-menu 60 / #panes-panel·#zoom-panel 70 / #toast 90 */
+#chat-pane.float {
+  position: fixed; z-index: 40; margin-right: 0; overflow: hidden;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+/* 收细条 = 收敛态**输入栏**（不是胶囊按钮）：壳透明，形状全由 .chat-pill 自己给；
+   宽度由 js/chat.js placeSlim 按编辑列宽写内联（卡仍居中于编辑列中线） */
+#chat-pane.slim {
+  position: fixed; z-index: 40; margin-right: 0; bottom: 24px; left: 50%;
+  transform: translateX(-50%); width: auto; min-width: 0; height: auto;
+  background: transparent; border: none; box-shadow: none; overflow: visible;
+}
+#chat-pane.slim .chat-head, #chat-pane.slim #chat-body, #chat-pane.slim .chat-grip { display: none; }
+.chat-pill {
+  display: none; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; height: 46px; padding: 0 8px 0 16px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel); box-shadow: var(--shadow);
+  color: var(--ink-faint); font-family: var(--sans); font-size: 13px; text-align: left;
+}
+#chat-pane.slim .chat-pill { display: flex; }
+.chat-pill:hover { border-color: var(--border-strong); color: var(--ink-soft); }
+.cp-ph { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-arrow {
+  flex-shrink: 0; width: 30px; height: 30px; display: grid; place-items: center;
+  border-radius: 999px; background: var(--plane); color: var(--ink-soft); font-size: 13px;
+}
+/* 头部与卡体是一件：不画分隔线（内嵌 Floria 的底板/圆角由 chat.js dress() 抹平） */
+.chat-head {
+  flex-shrink: 0; height: 40px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px 0 15px;
+}
+.chat-title { font-family: var(--serif); font-size: 13.5px; font-weight: 600; letter-spacing: .5px; }
+.chat-head-actions { display: flex; gap: 2px; }
+/* 头部图标 = 内联 SVG（16px 描线，与顶栏 #btn-panes 同一套）；比默认 15px/1.4 略重一点，
+   小尺寸下不发虚、三枚之间也不再挤在一起 */
+.chat-head-actions .icon-btn svg { width: 16px; height: 16px; stroke-width: 1.5; }
+/* 高度把手：只有悬浮态露出来（宽由编辑列宽给定，故只 ns 方向可拖） */
+.chat-grip { display: none; position: absolute; left: 0; top: 0; width: 14px; height: 14px; cursor: ns-resize; }
+#chat-pane.float .chat-grip { display: block; }
+#chat-body { flex: 1; min-height: 0; position: relative; }
+#chat-body iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--panel); }
+.chat-hint {
+  padding: 24px 18px; color: var(--ink-faint); font-size: 12.5px; line-height: 1.7; text-align: center;
+}
+
+/* PDF 编译预览层（pdf.js 自绘，Prism 风格） */
+#pdf-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--desk); z-index: 5; }
+#pdf-wrap.hidden { display: none; }
+/* PDF 卡内浮条（2026-09-25 定案：Prism 那样把 PDF 的东西全放进 PDF 卡，顶栏不再有预览段）
+   顶条 = 编译态靠左 + 缩放/下载靠右；底条 = 翻页胶囊居中。两条都覆盖在页面上、不占流。 */
+#tb-pdf {
+  position: absolute; top: 10px; left: 10px; right: 10px; z-index: 12;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  pointer-events: none;                    /* 只有子件可点，免得挡住「点 PDF 跳源码」 */
+}
+#tb-view { display: flex; align-items: center; gap: 8px; min-width: 0; pointer-events: auto; }
+#tb-pdf > * { flex-shrink: 0; }
+#pdf-nav { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 12; }
+#pdf-nav .pv-caps { background: var(--panel); box-shadow: var(--shadow); }
+/* 浮在页面上，浅底同 --desk 时读不清 → 给个面板底 + 阴影 */
+#tb-pdf #pdf-state, #tb-pdf #pdf-zoom-toggle { box-shadow: var(--shadow); }
+#tb-pdf .icon-btn.chip {
+  width: auto; padding: 0 10px; height: 30px; border: 1px solid var(--border);
+  background: var(--bg-soft); border-radius: 999px; box-shadow: var(--shadow);
+}
+#pdf-state {
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 16px;
+  font-size: 13px; font-weight: 600; background: var(--bg-soft); color: var(--ink-soft);
+  cursor: pointer; font-family: var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 180px;
+}
+#pdf-state:disabled { cursor: default; opacity: .75; }
+#pdf-state.st-ok   { visibility: hidden; }   /* 已编译=正常态，胶囊隐藏（占位保留，右组不跳位） */
+#pdf-state.st-stale{ color: var(--ink-soft); border-color: var(--border-strong); border-style: dashed; background: var(--panel); }
+#pdf-state.st-err  { color: var(--bg); border-color: var(--ink); background: var(--ink); }
+#pdf-state.st-busy { color: var(--ink-soft); border-color: var(--border-strong); background: var(--bg-soft); }
+#pdf-state.st-none { color: var(--ink-soft); }
+html[data-theme="dark"] #pdf-state.st-err { color: var(--accent-fg); }
+.pv-caps {
+  display: flex; align-items: center; gap: 2px; padding: 2px 6px;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px;
+}
+.pv-caps button {
+  width: 22px; height: 22px; border: none; background: none; border-radius: 50%;
+  color: var(--ink-soft); font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.pv-caps button:hover { background: var(--accent-soft); color: var(--accent-deep); }
+#pdf-page-ind { font-size: 12px; min-width: 64px; text-align: center; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.pv-zoomwrap { position: relative; }
+#pdf-zoom-toggle {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+  border: 1px solid var(--border); background: var(--bg-soft); border-radius: 999px;
+  color: var(--ink-soft); font-size: 12.5px;
+}
+#pdf-zoom-toggle:hover { color: var(--ink); border-color: var(--border-strong); }
+#pdf-zoom-label { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+.zcaret { font-size: 10px; line-height: 1; }
+/* 缩放折叠面板：自动缩放 / 预设档位 / 底部自由滑杆（右对齐弹出，避免靠右溢出屏幕） */
+#zoom-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 248px; padding: 12px; z-index: 70;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+}
+.zp-row { display: flex; gap: 6px; }
+.zp-row button {
+  flex: 1; padding: 5px 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); color: var(--ink-soft); font-size: 12px;
+}
+.zp-row button:hover { color: var(--accent-deep); background: var(--accent-soft); border-color: var(--border-strong); }
+.zp-row button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.zp-slider { display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+#pdf-zoom-range { flex: 1; accent-color: var(--ink); }
+#pdf-zoom-val { min-width: 44px; text-align: right; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+#pdf-scroll {
+  flex: 1; overflow: auto; background: var(--desk);
+  -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;
+  scroll-snap-type: y proximity;     /* 垂直翻页：页首对齐 */
+}
+#pdf-pages {
+  display: flex; flex-direction: column; gap: 18px; padding: 20px;
+  align-items: safe center;          /* 适宽时水平居中；放大超出井宽时退化为靠左（左缘可达） */
+}
+.pv-page {
+  flex: 0 0 auto; background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, .16);
+  border-radius: 2px; overflow: hidden; scroll-snap-align: start; position: relative;
+  cursor: crosshair;                 /* 点击 = 跳转源码 */
+}
+.pv-page canvas { display: block; }
+/* 跳转成功时点中位置的淡出圈 */
+.pv-mark {
+  position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px;
+  border: 2px solid #111; border-radius: 50%; pointer-events: none;
+  animation: pv-mark-out .9s ease forwards;
+}
+@keyframes pv-mark-out {
+  0% { transform: scale(.5); opacity: .9; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+/* 源码被跳转到的行（1.5s 后由 app.js 移除） */
+.cm-flash { background: rgba(17, 17, 17, .10); }
+html[data-theme="dark"] .cm-flash { background: rgba(242, 242, 242, .14); }
+
+#paper {
+  max-width: 800px; margin: 0 auto; background: var(--paper);
+  border: 1px solid var(--border); border-radius: 4px;
+  box-shadow: var(--shadow);
+  padding: 64px 72px;
+  font-family: var(--serif); font-size: 16.5px; line-height: 1.85;
+  color: var(--ink);
+  cursor: default;
+}
+
+/* ============ 论文排版（渲染产物） ============ */
+#paper .doc-title { font-size: 30px; font-weight: 700; text-align: center; line-height: 1.4; margin: 6px 0 14px; }
+#paper .doc-author { text-align: center; font-size: 15.5px; color: var(--ink); }
+#paper .doc-author .au-sep { color: var(--ink-faint); margin: 0 8px; }
+#paper .doc-date { text-align: center; font-size: 13.5px; color: var(--ink-soft); margin: 8px 0 26px; }
+#paper .abstract {
+  margin: 0 44px 26px; padding: 14px 20px;
+  background: var(--bg-soft); border-radius: 8px;
+  font-size: 14.5px; line-height: 1.75;
+}
+#paper .abstract h3 {
+  font-size: 13px; letter-spacing: 2px; text-align: center;
+  color: var(--ink-soft); font-weight: 600; margin-bottom: 8px;
+}
+#paper .toc { margin: 0 30px 26px; }
+#paper .toc .toc-h { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+#paper .toc a { display: block; color: var(--ink-soft); text-decoration: none; font-size: 14px; padding: 2.5px 0; cursor: pointer; }
+#paper .toc a:hover { color: var(--accent-deep); }
+#paper .toc a.lv2 { padding-left: 20px; }
+#paper .toc a.lv3 { padding-left: 40px; }
+#paper h2.sec, #paper h3.sec, #paper h4.sec { font-weight: 700; line-height: 1.4; scroll-margin-top: 20px; }
+#paper h2.sec { font-size: 22px; margin: 30px 0 14px; }
+#paper h3.sec { font-size: 18px; margin: 24px 0 12px; }
+#paper h4.sec { font-size: 16px; margin: 20px 0 10px; }
+#paper .sec-no { color: inherit; margin-right: 10px; font-feature-settings: "tnum"; }
+#paper p { margin: 0 0 12px; text-align: justify; }
+#paper p[data-line], #paper [data-line] { cursor: pointer; }
+#paper p[data-line]:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+#paper ul, #paper ol { margin: 0 0 12px 34px; }
+#paper li { margin-bottom: 4px; }
+#paper .katex { font-size: 1.06em; }
+#paper .katex-display { margin: 16px 0; padding: 6px 0; overflow-x: auto; overflow-y: hidden; }
+#paper .eq-wrap { position: relative; }
+#paper .eq-no { position: absolute; right: 0; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: 14px; }
+#paper table.ltab { border-collapse: collapse; margin: 16px auto 20px; font-size: 14.5px; }
+#paper table.ltab td, #paper table.ltab th { padding: 5px 14px; }
+#paper table.ltab tr.tchead td { font-weight: 700; border-bottom: 1px solid var(--ink); }
+#paper table.ltab caption { caption-side: bottom; font-size: 13.5px; color: var(--ink-soft); padding-top: 8px; }
+#paper .tline td { border-top: 1px solid var(--ink); }
+#paper .tcline td { border-top: 1px solid var(--ink-faint); }
+#paper figure { margin: 18px auto 20px; text-align: center; }
+#paper figure .gfx {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 130px; margin: 0 auto;
+  border: 1.5px dashed var(--border-strong); border-radius: 10px;
+  color: var(--ink-faint); font-size: 13px; font-family: var(--sans);
+  background: var(--bg-soft); padding: 20px;
+}
+#paper figure .gfx:has(> .gfx-img) { border: none; background: none; padding: 0; min-height: 0; }
+#paper .gfx-img { max-width: 100%; max-height: 480px; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,.10); }
+#paper .gfx-img-inline { max-width: min(100%, 420px); vertical-align: middle; border-radius: 4px; }
+#paper figcaption { font-size: 13.5px; color: var(--ink-soft); margin-top: 8px; }
+#paper .cite { font-size: .82em; color: var(--accent-deep); cursor: pointer; }
+#paper .fn-mark { color: var(--accent-deep); font-size: .78em; vertical-align: super; cursor: pointer; }
+#paper .footnotes { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--ink-soft); }
+#paper .footnotes .fn-no { color: var(--accent-deep); margin-right: 6px; }
+#paper .bib-list { margin: 0 0 12px 30px; }
+#paper .bib-list li { font-size: 14.5px; margin-bottom: 6px; }
+#paper .bib-note { font-size: 12.5px; color: var(--ink-faint); font-family: var(--sans); margin: 10px 0; }
+#paper .unknown-cmd { color: var(--ink); background: var(--bg-soft); border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 3px; font-family: var(--mono); font-size: .82em; }
+#paper code { font-family: var(--mono); font-size: .85em; background: var(--bg-soft); padding: 1.5px 5px; border-radius: 4px; }
+#paper .verbatim { font-family: var(--mono); font-size: .84em; background: var(--bg-soft); border-radius: 8px; padding: 14px 18px; overflow-x: auto; white-space: pre-wrap; margin: 14px 0; }
+#paper blockquote { border-left: 3px solid var(--border-strong); margin: 14px 0; padding: 4px 18px; color: var(--ink-soft); }
+#paper .env-unknown { border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 16px; margin: 12px 0; }
+#paper .env-unknown .env-tag { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); display: block; margin-bottom: 4px; }
+#paper a { color: var(--accent-deep); }
+#paper hr.newpage { border: none; margin: 30px 0; } /* 换页标记不画线——PDF 里分页本就不可见 */
+
+/* ============ CodeMirror 主题（floria） ============ */
+.cm-s-floria.CodeMirror { background: var(--panel); color: var(--ink); }
+.cm-s-floria .CodeMirror-gutters { background: var(--panel); border-right: 1px solid var(--border); }
+.cm-s-floria .CodeMirror-linenumber { color: var(--ink-faint); font-size: 11px; }
+.cm-s-floria .CodeMirror-cursor { border-left: 2px solid var(--accent); }
+.cm-s-floria .CodeMirror-activeline-background { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+.cm-s-floria .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.cm-s-floria span.cm-comment { color: var(--ink-faint); font-style: italic; }
+.cm-s-floria span.cm-keyword { color: var(--ink); font-weight: 600; }
+.cm-s-floria span.cm-atom { color: var(--ink-soft); }
+.cm-s-floria span.cm-variable { color: var(--ink); }
+.cm-s-floria span.cm-tag { color: var(--ink); }
+.cm-s-floria span.cm-string { color: var(--ink-soft); }
+.cm-s-floria span.cm-meta { color: var(--ink); font-weight: 600; }
+html[data-theme="dark"] .cm-s-floria span.cm-keyword { color: var(--ink); }
+html[data-theme="dark"] .cm-s-floria span.cm-atom { color: var(--ink-soft); }
+html[data-theme="dark"] .cm-s-floria span.cm-tag { color: var(--ink); }
+html[data-theme="dark"] .cm-s-floria span.cm-string { color: var(--ink-soft); }
+html[data-theme="dark"] .cm-s-floria span.cm-meta { color: var(--ink); }
+
+/* ============ Toast ============ */
+#toast {
+  position: fixed; bottom: 42px; left: 50%; transform: translateX(-50%); z-index: 90;
+  background: var(--ink); color: var(--bg); border-radius: 10px;
+  padding: 9px 18px; font-size: 13px; box-shadow: var(--shadow);
+  animation: toast-in .2s ease;
+}
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+/* ============ 打印（只出论文纸面） ============ */
+@media print {
+  body { overflow: visible; background: #fff; }
+  #view-dashboard, #topbar, #outline, #editor-pane, #divider, #toast, #pdf-wrap,
+  #tb-panes, #panes-panel, #chat-pane { display: none !important; }
+  #view-editor, #workspace { display: block; height: auto; }
+  #view-editor { background: #fff; padding: 0; }
+  #preview-pane { overflow: visible; background: #fff; border-radius: 0; padding: 0; }
+  #paper { border: none; box-shadow: none; max-width: 100%; padding: 0; font-size: 12pt; }
+}

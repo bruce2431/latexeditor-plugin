@@ -1,0 +1,15 @@
+{
+  "name": "pj18-preview",
+  "version": "0.1.0",
+  "description": "Pj18 · LaTeX 论文预览（网关 backend 模式：拉起 server.py 本地服务器，仪表盘自动发现 MATH/PHYSIC 书稿，保存写回磁盘）",
+  "backend": {
+    "name": "Pj18 LaTeX 后端",
+    "cmd": ["python", "-B", "server.py", "--port", "{port}", "--root", "{projectRoot}", "--no-open"],
+    "cwd": ".",
+    "port": 0,
+    "idleMinutes": 30,
+    "readyPath": "/index.html"
+  },
+  "owner": "Pj18-LaTex论文书写",
+  "hotReload": true
+}
