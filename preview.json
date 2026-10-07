@@ -1,6 +1,6 @@
 {
   "name": "pj18-preview",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pj18 · LaTeX 论文预览 v2（网关 backend 模式：拉起 server.py；目录页列出项目，编辑页是一张可编译的 PDF）",
   "backend": {
     "name": "Pj18 LaTeX 后端",
